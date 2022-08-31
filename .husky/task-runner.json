@@ -1,0 +1,8 @@
+{
+   "tasks": [
+      {
+         "name": "dotnet-format",
+         "command": "dotnet-format"
+      }
+   ]
+}

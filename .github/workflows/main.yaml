@@ -1,0 +1,45 @@
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get latest code
+      uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version:  | 
+          5.0.x
+          6.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Install EF Core CLI
+      run: |
+          dotnet new tool-manifest --force
+          dotnet tool install dotnet-ef --global
+    - name: Build
+      run: dotnet build -c Release --no-restore
+    - name: Update DB
+      run:  |
+          cd LMS.Infrastructure
+          export ASPNETCORE_ENVIRONMENT="Production"
+          dotnet ef database update -s ../LMS.API
+          cd ../
+    # - name: Test
+    #   run: dotnet test --no-build --verbosity normal
+    - name: Publish
+      run: dotnet publish -c Release --output ./publish/ --no-restore
+    - name: FTP Deploy
+      uses: SamKirkland/FTP-Deploy-Action@4.3.0
+      with:
+        server: ${{ secrets.ftp_server }}
+        username: ${{ secrets.ftp_username }}
+        password: ${{ secrets.ftp_password }}
+        protocol: ftp
+        local-dir: ./publish/
+        log-level: verbose
+        
